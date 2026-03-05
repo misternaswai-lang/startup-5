@@ -11,4 +11,5 @@
 
 - [Неделя 3](https://github.com/misternaswai-lang/startup-5/tree/week3)</br>
 </br>
-- [Неделя 4](https://github.com/misternaswai-lang/startup-5/tree/week2)</br>
+
+- [Неделя 4](https://github.com/misternaswai-lang/startup-5/tree/week4)</br>
