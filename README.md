@@ -16,3 +16,7 @@
 </br>
 
 - [Неделя 5](https://github.com/misternaswai-lang/startup-5/blob/week5/README.md)</br>
+</br>
+
+- [Неделя 6](https://github.com/misternaswai-lang/startup-5/blob/week6/README.md)</br>
+</br>
