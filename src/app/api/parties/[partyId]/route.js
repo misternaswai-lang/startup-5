@@ -80,12 +80,14 @@ export async function PATCH(request, context) {
     partyName: body?.partyName?.trim(),
     partyGame: body?.partyGame?.trim(),
     totalMembers: body?.totalMembers,
+    status: body?.status,
   };
 
   if (
     payload.partyName === undefined &&
     payload.partyGame === undefined &&
-    payload.totalMembers === undefined
+    payload.totalMembers === undefined &&
+    payload.status === undefined
   ) {
     return error(400, "Validation error", ["At least one field must be provided"]);
   }
@@ -104,6 +106,7 @@ export async function PATCH(request, context) {
         p."partyName",
         p."partyGame",
         p."totalMembers",
+        p.status,
         COALESCE(pm_counts."currentMembers", 0) AS "currentMembers"
       FROM "Party" p
       LEFT JOIN (
@@ -135,6 +138,12 @@ export async function PATCH(request, context) {
       };
     }
 
+    const nextStatus =
+      payload.status ??
+      (party.status === "in_game"
+        ? "in_game"
+        : normalizePartyStatus(party.currentMembers, nextTotalMembers));
+
     await client.query(
       `UPDATE "Party"
       SET
@@ -148,7 +157,7 @@ export async function PATCH(request, context) {
         payload.partyName ?? party.partyName,
         payload.partyGame ?? party.partyGame,
         nextTotalMembers,
-        normalizePartyStatus(party.currentMembers, nextTotalMembers),
+        nextStatus,
       ]
     );
 

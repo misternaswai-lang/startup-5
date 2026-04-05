@@ -2,6 +2,64 @@ export function normalizePartyStatus(currentMembers, totalMembers) {
   return currentMembers >= totalMembers ? "closed" : "open";
 }
 
+export function mapPartySummaryRow(party) {
+  return {
+    id: party.id,
+    partyName: party.partyName,
+    partyGame: party.partyGame,
+    totalMembers: party.totalMembers,
+    currentMembers: party.currentMembers,
+    status: party.status,
+    ownerId: party.ownerId,
+    ownerUsername: party.ownerUsername,
+    createdAt: party.createdAt.toISOString(),
+  };
+}
+
+export async function fetchPartySummaries(
+  db,
+  { whereClause = "", values = [], orderBy = 'p."createdAt" DESC', limit, offset }
+) {
+  const queryValues = [...values];
+  let paginationClause = "";
+
+  if (limit !== undefined) {
+    queryValues.push(limit);
+    paginationClause += ` LIMIT $${queryValues.length}`;
+  }
+
+  if (offset !== undefined) {
+    queryValues.push(offset);
+    paginationClause += ` OFFSET $${queryValues.length}`;
+  }
+
+  const result = await db.query(
+    `SELECT
+      p.id,
+      p."partyName",
+      p."partyGame",
+      p."totalMembers",
+      p.status,
+      p."ownerId",
+      p."createdAt",
+      u.username AS "ownerUsername",
+      COALESCE(pm_counts."currentMembers", 0) AS "currentMembers"
+    FROM "Party" p
+    JOIN "User" u ON u.id = p."ownerId"
+    LEFT JOIN (
+      SELECT "partyId", COUNT(*)::int AS "currentMembers"
+      FROM "PartyMember"
+      GROUP BY "partyId"
+    ) pm_counts ON pm_counts."partyId" = p.id
+    ${whereClause ? `WHERE ${whereClause}` : ""}
+    ORDER BY ${orderBy}
+    ${paginationClause}`,
+    queryValues
+  );
+
+  return result.rows.map(mapPartySummaryRow);
+}
+
 export async function fetchPartyById(db, partyId) {
   const partyResult = await db.query(
     `SELECT

@@ -1,7 +1,7 @@
 import { createId, requireAuthUser } from "@/lib/auth";
 import { query, withTransaction } from "@/lib/db";
 import { error, json } from "@/lib/http";
-import { fetchPartyById, normalizePartyStatus } from "@/lib/party";
+import { fetchPartyById, fetchPartySummaries, normalizePartyStatus } from "@/lib/party";
 import { parsePagination, validatePartyPayload } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -23,48 +23,18 @@ export async function GET(request) {
     filters.push(`p."partyGame" = $${values.length}`);
   }
 
-  values.push(limit);
-  const limitPlaceholder = `$${values.length}`;
-  values.push(offset);
-  const offsetPlaceholder = `$${values.length}`;
-
-  const result = await query(
-    `SELECT
-      p.id,
-      p."partyName",
-      p."partyGame",
-      p."totalMembers",
-      p.status,
-      p."ownerId",
-      p."createdAt",
-      u.username AS "ownerUsername",
-      COALESCE(pm_counts."currentMembers", 0) AS "currentMembers"
-    FROM "Party" p
-    JOIN "User" u ON u.id = p."ownerId"
-    LEFT JOIN (
-      SELECT "partyId", COUNT(*)::int AS "currentMembers"
-      FROM "PartyMember"
-      GROUP BY "partyId"
-    ) pm_counts ON pm_counts."partyId" = p.id
-    ${filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : ""}
-    ORDER BY p."createdAt" DESC
-    LIMIT ${limitPlaceholder}
-    OFFSET ${offsetPlaceholder}`,
-    values
+  const items = await fetchPartySummaries(
+    { query },
+    {
+      whereClause: filters.join(" AND "),
+      values,
+      limit,
+      offset,
+    }
   );
 
   return json({
-    items: result.rows.map((party) => ({
-      id: party.id,
-      partyName: party.partyName,
-      partyGame: party.partyGame,
-      totalMembers: party.totalMembers,
-      currentMembers: party.currentMembers,
-      status: party.status,
-      ownerId: party.ownerId,
-      ownerUsername: party.ownerUsername,
-      createdAt: party.createdAt.toISOString(),
-    })),
+    items,
     limit,
     offset,
   });

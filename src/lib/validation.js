@@ -2,6 +2,8 @@ function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+export const PARTY_STATUSES = ["open", "closed", "in_game"];
+
 export function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -66,6 +68,15 @@ export function validatePartyPayload(body, { partial = false } = {}) {
         body.listMembers.some((memberId) => !isNonEmptyString(memberId)))
     ) {
       details.push("listMembers must be an array of user ids");
+    }
+  }
+
+  if (!partial || body.status !== undefined) {
+    if (
+      body.status !== undefined &&
+      (!isNonEmptyString(body.status) || !PARTY_STATUSES.includes(body.status))
+    ) {
+      details.push("status must be one of: open, closed, in_game");
     }
   }
 
