@@ -4,9 +4,9 @@
 
 Ниже типовой пайплайн работы с API Party для двух пользователей.
 
-1. Пользователь A регистрируется через `POST /auth/register`.
+1. Пользователь A регистрируется через `POST /api/auth/register`.
 2. Пользователь A логинится через `POST /auth/login` и получает `accessToken` и `refreshToken`.
-3. Пользователь B проходит тот же путь: `POST /auth/register`, затем `POST /auth/login`.
+3. Пользователь B проходит тот же путь: `POST /api/auth/register`, затем `POST /auth/login`.
 4. Пользователь A создает пати через `POST /parties`, передавая `partyName`, `partyGame`, `totalMembers`. Создатель добавляется в пати автоматически.
 5. При необходимости пользователь A может посмотреть свои пати через `GET /users/me/parties` или все доступные пати через `GET /parties`.
 6. Если пользователь A хочет пригласить конкретного друга, он вызывает `POST /parties/{partyId}/invites` и передает `toUserId` пользователя B.
@@ -25,7 +25,7 @@ Authorization: Bearer <accessToken>
 
 Если смотреть на API с точки зрения клиентского приложения, поток работы обычно такой:
 
-1. На экране регистрации фронт отправляет `POST /auth/register`.
+1. На экране регистрации фронт отправляет `POST /api/auth/register`.
 2. После успешной регистрации пользователь переходит на экран логина или логинится автоматически через `POST /auth/login`.
 3. После логина фронт сохраняет `accessToken` и использует его в `Authorization: Bearer <accessToken>` для всех защищенных запросов.
 4. Для построения профиля и проверки текущей сессии фронт запрашивает `GET /users/me`.
@@ -46,7 +46,7 @@ Authorization: Bearer <accessToken>
 
 Практически это можно разложить по экранам так:
 
-- `Register` -> `POST /auth/register`
+- `Register` -> `POST /api/auth/register`
 - `Login` -> `POST /auth/login`
 - `Profile` -> `GET /users/me`
 - `Parties list` -> `GET /parties`, `GET /parties/search`
@@ -195,7 +195,7 @@ Authorization: Bearer <accessToken>
 
 ## Аутентификация
 
-### POST /auth/register
+### POST /api/auth/register
 
 Создает нового пользователя.
 
