@@ -18,13 +18,13 @@ export async function POST(request, context) {
   try {
     body = await request.json();
   } catch {
-    return error(400, "Invalid JSON body");
+    return error(400, "Некорректное JSON-тело запроса");
   }
 
   const memberId = body?.memberId?.trim();
 
   if (!memberId) {
-    return error(400, "Validation error", ["memberId is required"]);
+    return error(400, "Ошибка валидации", ["memberId обязателен"]);
   }
 
   const result = await withTransaction(async (client) => {
@@ -36,15 +36,15 @@ export async function POST(request, context) {
     const party = partyResult.rows[0];
 
     if (!party) {
-      return { status: 404, message: "Party not found" };
+      return { status: 404, message: "Пати не найдена" };
     }
 
     if (party.ownerId !== user.id) {
-      return { status: 403, message: "Only the creator can kick members" };
+      return { status: 403, message: "Исключать участников может только создатель" };
     }
 
     if (memberId === user.id) {
-      return { status: 400, message: "Creator cannot kick themselves" };
+      return { status: 400, message: "Создатель не может исключить сам себя" };
     }
 
     const membershipResult = await client.query(
@@ -55,7 +55,7 @@ export async function POST(request, context) {
     const membership = membershipResult.rows[0];
 
     if (!membership) {
-      return { status: 404, message: "Member is not in this party" };
+      return { status: 404, message: "Участник не состоит в этой пати" };
     }
 
     await client.query('DELETE FROM "Invite" WHERE "partyId" = $1 AND "toUserId" = $2', [

@@ -1,6 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  async rewrites() {
+    return [
+      {
+        source: "/register",
+        destination: "/api/auth/register",
+      },
+      {
+        source: "/party/create",
+        destination: "/api/parties",
+      },
+    ];
+  },
 };
 
 export default nextConfig;

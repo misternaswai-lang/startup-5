@@ -17,13 +17,13 @@ export async function POST(request, context) {
   try {
     body = await request.json();
   } catch {
-    return error(400, "Invalid JSON body");
+    return error(400, "Некорректное JSON-тело запроса");
   }
 
   const toUserId = body?.toUserId?.trim();
 
   if (!toUserId) {
-    return error(400, "Validation error", ["toUserId is required"]);
+    return error(400, "Ошибка валидации", ["toUserId обязателен"]);
   }
 
   const result = await withTransaction(async (client) => {
@@ -35,11 +35,11 @@ export async function POST(request, context) {
     const party = partyResult.rows[0];
 
     if (!party) {
-      return { status: 404, message: "Party not found" };
+      return { status: 404, message: "Пати не найдена" };
     }
 
     if (party.ownerId !== user.id) {
-      return { status: 403, message: "Only the creator can create invites" };
+      return { status: 403, message: "Создавать приглашения может только создатель" };
     }
 
     const targetUserResult = await client.query(
@@ -50,7 +50,7 @@ export async function POST(request, context) {
     const targetUser = targetUserResult.rows[0];
 
     if (!targetUser) {
-      return { status: 404, message: "Target user not found" };
+      return { status: 404, message: "Пользователь для приглашения не найден" };
     }
 
     const membershipResult = await client.query(
@@ -59,7 +59,7 @@ export async function POST(request, context) {
     );
 
     if (membershipResult.rowCount > 0) {
-      return { status: 409, message: "User is already in this party" };
+      return { status: 409, message: "Пользователь уже состоит в этой пати" };
     }
 
     const inviteResult = await client.query(

@@ -6,13 +6,73 @@ import { parsePagination, validatePartyPayload } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
+function readTrimmedString(value) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return value.trim();
+}
+
+function normalizeStringArray(value) {
+  if (value === undefined || value === null) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function validateMinimalPartyCreatePayload(payload) {
+  const details = [];
+
+  if (payload.description !== undefined && payload.description !== null && typeof payload.description !== "string") {
+    details.push("Описание должно быть строкой");
+  }
+
+  if (payload.address !== undefined && payload.address !== null && typeof payload.address !== "string") {
+    details.push("Адрес должен быть строкой");
+  }
+
+  if (payload.keywords !== undefined && payload.keywords !== null) {
+    if (!Array.isArray(payload.keywords)) {
+      details.push("Ключевые слова должны быть массивом строк");
+    } else if (payload.keywords.some((keyword) => typeof keyword !== "string")) {
+      details.push("Каждое ключевое слово должно быть строкой");
+    }
+  }
+
+  return details;
+}
+
+function derivePartyName(description) {
+  const normalized = String(description ?? "").trim().replace(/\s+/g, " ");
+
+  if (normalized === "") {
+    return "Новая пати";
+  }
+
+  if (normalized.length <= 48) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 48).trimEnd()}…`;
+}
+
 export async function GET(request) {
   const searchParams = request.nextUrl.searchParams;
   const partyGame = searchParams.get("partyGame")?.trim();
   const { details, limit, offset } = parsePagination(searchParams);
 
   if (details.length > 0) {
-    return error(400, "Validation error", details);
+    return error(400, "Ошибка валидации", details);
   }
 
   const values = [];
@@ -52,30 +112,53 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return error(400, "Invalid JSON body");
+    return error(400, "Некорректное JSON-тело запроса");
   }
 
   const payload = {
-    partyName: body?.partyName?.trim(),
-    partyGame: body?.partyGame?.trim(),
+    partyName: readTrimmedString(body?.partyName),
+    partyGame: readTrimmedString(body?.partyGame),
+    description: readTrimmedString(body?.description),
+    address: readTrimmedString(body?.address),
+    keywords: normalizeStringArray(body?.keywords),
     totalMembers: body?.totalMembers,
     listMembers: body?.listMembers,
   };
 
-  const details = validatePartyPayload(payload);
+  const wantsFullPayload =
+    payload.partyName !== undefined ||
+    payload.partyGame !== undefined ||
+    payload.totalMembers !== undefined;
+
+  const details = wantsFullPayload ? validatePartyPayload(payload) : validateMinimalPartyCreatePayload(payload);
 
   if (details.length > 0) {
-    return error(400, "Validation error", details);
+    return error(400, "Ошибка валидации", details);
   }
 
-  const requestedMemberIds = [...new Set((payload.listMembers ?? []).map((memberId) => memberId.trim()))];
+  const normalizedPayload = wantsFullPayload
+    ? payload
+    : {
+        ...payload,
+        partyName: derivePartyName(payload.description),
+        partyGame: "Без игры",
+        description: typeof payload.description === "string" ? payload.description : "",
+        address: typeof payload.address === "string" ? payload.address : "",
+        totalMembers: 5,
+        listMembers: [],
+        keywords: Array.isArray(payload.keywords) ? payload.keywords : [],
+      };
+
+  const requestedMemberIds = [
+    ...new Set((normalizedPayload.listMembers ?? []).map((memberId) => memberId.trim())),
+  ];
   const memberIds = [...new Set([user.id, ...requestedMemberIds])];
 
-  if (payload.totalMembers < memberIds.length) {
+  if (normalizedPayload.totalMembers < memberIds.length) {
     return error(
       400,
-      "Validation error",
-      ["totalMembers cannot be less than the current number of participants"]
+      "Ошибка валидации",
+      ["Количество мест не может быть меньше текущего числа участников"]
     );
   }
 
@@ -87,24 +170,37 @@ export async function POST(request) {
       );
 
       if (usersResult.rowCount !== requestedMemberIds.length) {
-        throw new Error("One or more listMembers do not exist");
+        throw new Error("Один или несколько пользователей из listMembers не существуют");
       }
     }
 
     const partyId = createId();
-    const status = normalizePartyStatus(memberIds.length, payload.totalMembers);
+    const status = normalizePartyStatus(memberIds.length, normalizedPayload.totalMembers);
 
     await client.query(
       `INSERT INTO "Party" (
         id,
         "partyName",
         "partyGame",
+        description,
+        address,
+        keywords,
         "totalMembers",
         status,
         "ownerId"
       )
-      VALUES ($1, $2, $3, $4, $5::"PartyStatus", $6)`,
-      [partyId, payload.partyName, payload.partyGame, payload.totalMembers, status, user.id]
+      VALUES ($1, $2, $3, $4, $5, $6::text[], $7, $8::"PartyStatus", $9)`,
+      [
+        partyId,
+        normalizedPayload.partyName,
+        normalizedPayload.partyGame,
+        normalizedPayload.description,
+        normalizedPayload.address,
+        Array.isArray(normalizedPayload.keywords) ? normalizedPayload.keywords : [],
+        normalizedPayload.totalMembers,
+        status,
+        user.id,
+      ]
     );
 
     for (const memberId of memberIds) {
@@ -116,7 +212,7 @@ export async function POST(request) {
 
     return fetchPartyById(client, partyId);
   }).catch((transactionError) => {
-    if (transactionError.message === "One or more listMembers do not exist") {
+    if (transactionError.message === "Один или несколько пользователей из listMembers не существуют") {
       return null;
     }
 
@@ -124,7 +220,7 @@ export async function POST(request) {
   });
 
   if (!party) {
-    return error(400, "Validation error", ["One or more listMembers do not exist"]);
+    return error(400, "Ошибка валидации", ["Один или несколько пользователей из listMembers не существуют"]);
   }
 
   return json(party, { status: 201 });

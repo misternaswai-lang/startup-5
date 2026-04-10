@@ -34,15 +34,15 @@ export async function POST(request, context) {
     const invite = inviteResult.rows[0];
 
     if (!invite) {
-      return { status: 404, message: "Invite not found" };
+      return { status: 404, message: "Приглашение не найдено" };
     }
 
     if (invite.toUserId !== user.id) {
-      return { status: 403, message: "This invite does not belong to the current user" };
+      return { status: 403, message: "Это приглашение не принадлежит текущему пользователю" };
     }
 
     if (invite.status !== "pending") {
-      return { status: 409, message: "Invite has already been processed" };
+      return { status: 409, message: "Приглашение уже обработано" };
     }
 
     const existingMembershipResult = await client.query(
@@ -56,7 +56,7 @@ export async function POST(request, context) {
         [inviteId, "accepted"]
       );
 
-      return { status: 409, message: "User is already in this party" };
+      return { status: 409, message: "Пользователь уже состоит в этой пати" };
     }
 
     const countResult = await client.query(
@@ -65,7 +65,7 @@ export async function POST(request, context) {
     );
 
     if (countResult.rows[0].count >= invite.totalMembers) {
-      return { status: 409, message: "Party is already full" };
+      return { status: 409, message: "В пати уже нет свободных мест" };
     }
 
     await client.query(

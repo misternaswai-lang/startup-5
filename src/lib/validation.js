@@ -3,6 +3,7 @@ function isNonEmptyString(value) {
 }
 
 export const PARTY_STATUSES = ["open", "closed", "in_game"];
+export const USER_GENDERS = ["male", "female", "other"];
 
 export function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -12,15 +13,43 @@ export function validateRegisterInput(body) {
   const details = [];
 
   if (!validateEmail(body.email)) {
-    details.push("email must be a valid email address");
+    details.push("Email должен быть корректным адресом");
   }
 
   if (!isNonEmptyString(body.username) || body.username.trim().length < 3) {
-    details.push("username must be at least 3 characters long");
+    details.push("Имя пользователя должно содержать минимум 3 символа");
   }
 
   if (!isNonEmptyString(body.password) || body.password.length < 6) {
-    details.push("password must be at least 6 characters long");
+    details.push("Пароль должен содержать минимум 6 символов");
+  }
+
+  if (body.age !== undefined && body.age !== null) {
+    if (!Number.isInteger(body.age) || body.age < 1 || body.age > 120) {
+      details.push("Возраст должен быть целым числом от 1 до 120");
+    }
+  }
+
+  if (body.gender !== undefined && body.gender !== null) {
+    if (typeof body.gender !== "string") {
+      details.push("Пол должен быть строкой");
+    } else if (body.gender.trim() !== "" && !USER_GENDERS.includes(body.gender)) {
+      details.push("Пол должен быть одним из значений: male, female, other");
+    }
+  }
+
+  if (body.city !== undefined && body.city !== null) {
+    if (typeof body.city !== "string") {
+      details.push("Город должен быть строкой");
+    }
+  }
+
+  if (body.interests !== undefined && body.interests !== null) {
+    if (!Array.isArray(body.interests)) {
+      details.push("Интересы должны быть массивом строк");
+    } else if (body.interests.some((interest) => typeof interest !== "string")) {
+      details.push("Каждый интерес должен быть строкой");
+    }
   }
 
   return details;
@@ -30,11 +59,11 @@ export function validateLoginInput(body) {
   const details = [];
 
   if (!validateEmail(body.email)) {
-    details.push("email must be a valid email address");
+    details.push("Email должен быть корректным адресом");
   }
 
   if (!isNonEmptyString(body.password)) {
-    details.push("password is required");
+    details.push("Пароль обязателен");
   }
 
   return details;
@@ -44,20 +73,20 @@ export function validatePartyPayload(body, { partial = false } = {}) {
   const details = [];
 
   if (!partial || body.partyName !== undefined) {
-    if (!isNonEmptyString(body.partyName)) {
-      details.push("partyName is required");
+    if (typeof body.partyName !== "string") {
+      details.push("Название пати обязательно");
     }
   }
 
   if (!partial || body.partyGame !== undefined) {
-    if (!isNonEmptyString(body.partyGame)) {
-      details.push("partyGame is required");
+    if (typeof body.partyGame !== "string") {
+      details.push("Игра обязательна");
     }
   }
 
   if (!partial || body.totalMembers !== undefined) {
     if (!Number.isInteger(body.totalMembers) || body.totalMembers < 1) {
-      details.push("totalMembers must be an integer greater than 0");
+      details.push("Количество участников должно быть целым числом больше 0");
     }
   }
 
@@ -67,7 +96,29 @@ export function validatePartyPayload(body, { partial = false } = {}) {
       (!Array.isArray(body.listMembers) ||
         body.listMembers.some((memberId) => !isNonEmptyString(memberId)))
     ) {
-      details.push("listMembers must be an array of user ids");
+      details.push("Список участников должен быть массивом идентификаторов пользователей");
+    }
+  }
+
+  if (!partial || body.description !== undefined) {
+    if (body.description !== undefined && body.description !== null && typeof body.description !== "string") {
+      details.push("Описание должно быть строкой");
+    }
+  }
+
+  if (!partial || body.address !== undefined) {
+    if (body.address !== undefined && body.address !== null && typeof body.address !== "string") {
+      details.push("Адрес должен быть строкой");
+    }
+  }
+
+  if (!partial || body.keywords !== undefined) {
+    if (
+      body.keywords !== undefined &&
+      body.keywords !== null &&
+      (!Array.isArray(body.keywords) || body.keywords.some((keyword) => typeof keyword !== "string"))
+    ) {
+      details.push("Ключевые слова должны быть массивом строк");
     }
   }
 
@@ -76,7 +127,7 @@ export function validatePartyPayload(body, { partial = false } = {}) {
       body.status !== undefined &&
       (!isNonEmptyString(body.status) || !PARTY_STATUSES.includes(body.status))
     ) {
-      details.push("status must be one of: open, closed, in_game");
+      details.push("Статус должен быть одним из значений: open, closed, in_game");
     }
   }
 
@@ -91,11 +142,11 @@ export function parsePagination(searchParams) {
   const details = [];
 
   if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
-    details.push("limit must be an integer between 1 and 100");
+    details.push("limit должен быть целым числом от 1 до 100");
   }
 
   if (!Number.isInteger(parsedOffset) || parsedOffset < 0) {
-    details.push("offset must be an integer greater than or equal to 0");
+    details.push("offset должен быть целым числом больше или равным 0");
   }
 
   return {

@@ -16,7 +16,7 @@ export async function GET(request) {
   const { details, limit, offset } = parsePagination(request.nextUrl.searchParams);
 
   if (details.length > 0) {
-    return error(400, "Validation error", details);
+    return error(400, "Ошибка валидации", details);
   }
 
   const items = await fetchPartySummaries(
