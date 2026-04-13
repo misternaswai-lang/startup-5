@@ -123,6 +123,8 @@ export async function fetchPartyById(db, partyId) {
     totalMembers: party.totalMembers,
     currentMembers: party.currentMembers,
     status: party.status,
+    ownerId: party.ownerId,
+    ownerUsername: party.ownerUsername,
     createdAt: party.createdAt.toISOString(),
     owner: {
       id: party.ownerId,

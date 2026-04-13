@@ -23,6 +23,15 @@ Authorization: Bearer <accessToken>
 
 ## Пояснение для фронтенда
 
+Коротко по поиску и спискам:
+
+- `GET /parties` возвращает общий список пати. Если передать `partyGame`, фильтр будет точным.
+- `GET /parties/search` нужен для поиска. Он поддерживает `partyName`, `partyGame`, `keyword` и `keywords`.
+- `keyword` можно передавать несколько раз, `keywords` можно передавать строкой через запятую.
+- Для поиска нужно передать хотя бы один из параметров: `partyName`, `partyGame`, `keyword` или `keywords`.
+- Если передано несколько параметров поиска сразу, они применяются вместе через `AND`.
+- И краткая, и полная модель пати уже возвращают `description`, `address`, `keywords`; полная модель дополнительно возвращает владельца и участников.
+
 Если смотреть на API с точки зрения клиентского приложения, поток работы обычно такой:
 
 1. На экране регистрации фронт отправляет `POST /api/auth/register`.
@@ -138,9 +147,14 @@ Authorization: Bearer <accessToken>
   "id": "d885e22e-d919-4bac-9f64-4e97f75875c7",
   "partyName": "Ranked Push",
   "partyGame": "Dota 2",
+  "description": "Evening ranked session",
+  "address": "Moscow, Red Square",
+  "keywords": ["ranked", "voice"],
   "totalMembers": 3,
   "currentMembers": 2,
   "status": "open",
+  "ownerId": "3ff64295-5671-4ab9-bd8e-3808e486a422",
+  "ownerUsername": "player_one",
   "createdAt": "2026-04-05T10:18:29.135Z",
   "owner": {
     "id": "3ff64295-5671-4ab9-bd8e-3808e486a422",
@@ -436,19 +450,23 @@ Query params:
 
 ### GET /parties/search
 
-Поиск пати по названию и/или игре.
+Поиск пати по названию, игре и/или ключевым словам.
 
 Query params:
 
 - `partyName`: строка, опционально
 - `partyGame`: строка, опционально
+- `keyword`: query-параметр можно передавать несколько раз
+- `keywords`: строка со списком через запятую
 - `limit`: число от 1 до 100, опционально, по умолчанию `20`
 - `offset`: число от 0, опционально, по умолчанию `0`
 
 Правила:
 
-- должен быть передан хотя бы один параметр: `partyName` или `partyGame`
-- поиск выполняется по частичному совпадению
+- должен быть передан хотя бы один параметр: `partyName`, `partyGame`, `keyword` или `keywords`
+- `partyName` и `partyGame` ищутся по частичному совпадению
+- `keyword` и `keywords` ищут по пересечению с массивом `keywords` в пати
+- если передано несколько параметров сразу, фильтры применяются вместе через `AND`
 
 Успешный ответ `200`:
 
@@ -459,6 +477,9 @@ Query params:
       "id": "472c8947-dfa2-4e55-9db4-0a5458c96e41",
       "partyName": "Searchable Squad",
       "partyGame": "Apex Legends",
+      "description": "Looking for two more players",
+      "address": "Discord",
+      "keywords": ["ranked", "mic"],
       "totalMembers": 4,
       "currentMembers": 2,
       "status": "open",
