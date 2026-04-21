@@ -5,14 +5,6 @@ function isNonEmptyString(value) {
 export const PARTY_STATUSES = ["open", "closed", "in_game"];
 export const USER_GENDERS = ["male", "female", "other"];
 
-const AUTH_VALIDATION_MESSAGES = {
-  emailInvalid: "Укажите корректный email",
-  usernameRequired: "Укажите имя пользователя",
-  usernameMin: "Имя пользователя должно содержать минимум 3 символа",
-  passwordRequired: "Укажите пароль",
-  passwordMin: "Пароль должен содержать минимум 6 символов",
-};
-
 export function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -20,20 +12,16 @@ export function validateEmail(email) {
 export function validateRegisterInput(body) {
   const details = [];
 
-  if (!isNonEmptyString(body.email) || !validateEmail(body.email)) {
-    details.push(AUTH_VALIDATION_MESSAGES.emailInvalid);
+  if (!validateEmail(body.email)) {
+    details.push("Email должен быть корректным адресом");
   }
 
-  if (!isNonEmptyString(body.username)) {
-    details.push(AUTH_VALIDATION_MESSAGES.usernameRequired);
-  } else if (body.username.trim().length < 3) {
-    details.push(AUTH_VALIDATION_MESSAGES.usernameMin);
+  if (!isNonEmptyString(body.username) || body.username.trim().length < 3) {
+    details.push("Имя пользователя должно содержать минимум 3 символа");
   }
 
-  if (typeof body.password !== "string" || body.password.length === 0) {
-    details.push(AUTH_VALIDATION_MESSAGES.passwordRequired);
-  } else if (body.password.length < 6) {
-    details.push(AUTH_VALIDATION_MESSAGES.passwordMin);
+  if (!isNonEmptyString(body.password) || body.password.length < 6) {
+    details.push("Пароль должен содержать минимум 6 символов");
   }
 
   if (body.age !== undefined && body.age !== null) {
@@ -70,14 +58,12 @@ export function validateRegisterInput(body) {
 export function validateLoginInput(body) {
   const details = [];
 
-  if (!isNonEmptyString(body.email) || !validateEmail(body.email)) {
-    details.push(AUTH_VALIDATION_MESSAGES.emailInvalid);
+  if (!validateEmail(body.email)) {
+    details.push("Email должен быть корректным адресом");
   }
 
-  if (typeof body.password !== "string" || body.password.length === 0) {
-    details.push(AUTH_VALIDATION_MESSAGES.passwordRequired);
-  } else if (body.password.length < 6) {
-    details.push(AUTH_VALIDATION_MESSAGES.passwordMin);
+  if (!isNonEmptyString(body.password)) {
+    details.push("Пароль обязателен");
   }
 
   return details;
