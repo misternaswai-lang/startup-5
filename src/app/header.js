@@ -33,24 +33,32 @@ export default function Header() {
 
         {/* Navigation */}
         <nav className="flex items-center gap-2 text-sm">
-          <button onClick={() => router.push("/")} className={linkClass("/")}>
-            Главная
-          </button>
-
-          <button
-            onClick={() => router.push("/parties")}
-            className={linkClass("/parties")}
-          >
-            Пати
-          </button>
-
           {isAuth ? (
-            <button
-              onClick={() => router.push("/me")}
-              className={linkClass("/me")}
-            >
-              Профиль
-            </button>
+            <>
+              {" "}
+              {/* Wrapped in a fragment to allow multiple sibling elements */}
+              <div className="flex items-center gap-2 text-sm">
+                <button
+                  onClick={() => router.push("/")}
+                  className={linkClass("/")}
+                >
+                  Главная
+                </button>
+
+                <button
+                  onClick={() => router.push("/parties")}
+                  className={linkClass("/parties")}
+                >
+                  Пати
+                </button>
+              </div>
+              <button
+                onClick={() => router.push("/me")}
+                className={linkClass("/me")}
+              >
+                Профиль
+              </button>
+            </>
           ) : (
             <div className="flex items-center gap-2 ml-2">
               <button
