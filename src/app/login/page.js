@@ -23,7 +23,7 @@ export default function Login() {
         throw data;
       }
 
-      // save tokens
+      // save tokenqs
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
 
