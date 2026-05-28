@@ -67,7 +67,7 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black px-4">
-      <div className="w-full max-w-md p-8 rounded-2xl bg-gradient-to-br from-purple-900/40 to-black border border-purple-700 shadow-2xl">
+      <div className="w-full max-w-md p-8  rounded-2xl bg-gradient-to-br from-purple-900/40 to-black border border-purple-700 shadow-2xl">
         <h1 className="text-3xl font-bold text-purple-400 mb-2 text-center">
           Регистрация
         </h1>
