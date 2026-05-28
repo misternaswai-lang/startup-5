@@ -7,13 +7,17 @@ export function mapUserRow(row) {
     id: row.id,
     email: row.email,
     username: row.username,
+    age: row.age,
+    gender: row.gender,
+    city: row.city,
+    interests: row.interests ?? [],
     createdAt: row.createdAt.toISOString(),
   };
 }
 
 export async function getUserById(id, db = { query }) {
   const result = await db.query(
-    'SELECT id, email, username, "createdAt" FROM "User" WHERE id = $1',
+    'SELECT id, email, username, age, gender, city, interests, "createdAt" FROM "User" WHERE id = $1',
     [id]
   );
 
@@ -25,7 +29,7 @@ export async function requireAuthUser(request) {
 
   if (!authorization?.startsWith("Bearer ")) {
     return {
-      error: "Missing bearer token",
+      error: "Отсутствует Bearer-токен",
     };
   }
 
@@ -37,7 +41,7 @@ export async function requireAuthUser(request) {
 
     if (!user) {
       return {
-        error: "User not found",
+        error: "Пользователь не найден",
       };
     }
 
@@ -46,7 +50,7 @@ export async function requireAuthUser(request) {
     };
   } catch {
     return {
-      error: "Invalid or expired token",
+      error: "Токен недействителен или истёк",
     };
   }
 }

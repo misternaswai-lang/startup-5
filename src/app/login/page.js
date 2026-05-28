@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -10,10 +9,19 @@ export default function Login() {
 
   const submit = async () => {
     try {
-      const data = await apiFetch("/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(form),
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw data;
+      }
 
       // save tokens
       localStorage.setItem("accessToken", data.accessToken);
@@ -27,8 +35,10 @@ export default function Login() {
 
       router.push("/me");
     } catch (e) {
-      if (e.error == "Invalid email or password") {
-        setError("неверная почта или пароль");
+      if (e?.error === "Invalid email or password") {
+        setError("Неверная почта или пароль");
+      } else {
+        setError(e?.error || "Ошибка входа");
       }
     }
   };
@@ -63,7 +73,7 @@ export default function Login() {
 
           {error && (
             <div className="bg-red-900/40 border border-red-500 text-red-300 p-3 rounded-lg text-sm">
-              <pre>{error}</pre>
+              <pre>{JSON.stringify(error, null, 2)}</pre>
             </div>
           )}
         </div>

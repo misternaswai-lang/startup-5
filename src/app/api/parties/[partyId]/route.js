@@ -6,12 +6,36 @@ import { validatePartyPayload } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
+function readTrimmedString(value) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return value.trim();
+}
+
+function normalizeStringArray(value) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
 export async function GET(_request, context) {
   const { partyId } = await context.params;
   const party = await fetchPartyById({ query }, partyId);
 
   if (!party) {
-    return error(404, "Party not found");
+    return error(404, "Пати не найдена");
   }
 
   return json(party);
@@ -50,11 +74,11 @@ export async function DELETE(request, context) {
   });
 
   if (deleted.status === 404) {
-    return error(404, "Party not found");
+    return error(404, "Пати не найдена");
   }
 
   if (deleted.status === 403) {
-    return error(403, "Only the creator can delete the party");
+    return error(403, "Удалить пати может только создатель");
   }
 
   return new Response(null, { status: 204 });
@@ -73,29 +97,35 @@ export async function PATCH(request, context) {
   try {
     body = await request.json();
   } catch {
-    return error(400, "Invalid JSON body");
+    return error(400, "Некорректное JSON-тело запроса");
   }
 
   const payload = {
-    partyName: body?.partyName?.trim(),
-    partyGame: body?.partyGame?.trim(),
+    partyName: readTrimmedString(body?.partyName),
+    partyGame: readTrimmedString(body?.partyGame),
     totalMembers: body?.totalMembers,
     status: body?.status,
+    description: readTrimmedString(body?.description),
+    address: readTrimmedString(body?.address),
+    keywords: normalizeStringArray(body?.keywords),
   };
 
   if (
     payload.partyName === undefined &&
     payload.partyGame === undefined &&
     payload.totalMembers === undefined &&
-    payload.status === undefined
+    payload.status === undefined &&
+    payload.description === undefined &&
+    payload.address === undefined &&
+    payload.keywords === undefined
   ) {
-    return error(400, "Validation error", ["At least one field must be provided"]);
+    return error(400, "Ошибка валидации", ["Нужно передать хотя бы одно поле для обновления"]);
   }
 
   const details = validatePartyPayload(payload, { partial: true });
 
   if (details.length > 0) {
-    return error(400, "Validation error", details);
+    return error(400, "Ошибка валидации", details);
   }
 
   const result = await withTransaction(async (client) => {
@@ -105,6 +135,9 @@ export async function PATCH(request, context) {
         p."ownerId",
         p."partyName",
         p."partyGame",
+        p.description,
+        p.address,
+        p.keywords,
         p."totalMembers",
         p.status,
         COALESCE(pm_counts."currentMembers", 0) AS "currentMembers"
@@ -134,7 +167,7 @@ export async function PATCH(request, context) {
     if (nextTotalMembers < party.currentMembers) {
       return {
         status: 400,
-        details: ["totalMembers cannot be less than the current number of participants"],
+        details: ["totalMembers не может быть меньше текущего числа участников"],
       };
     }
 
@@ -144,13 +177,26 @@ export async function PATCH(request, context) {
         ? "in_game"
         : normalizePartyStatus(party.currentMembers, nextTotalMembers));
 
+    const nextDescription =
+      payload.description === undefined ? party.description : payload.description ?? "";
+    const nextAddress = payload.address === undefined ? party.address : payload.address ?? "";
+    const nextKeywords =
+      payload.keywords === undefined
+        ? party.keywords ?? []
+        : Array.isArray(payload.keywords)
+          ? payload.keywords
+          : [];
+
     await client.query(
       `UPDATE "Party"
       SET
         "partyName" = $2,
         "partyGame" = $3,
         "totalMembers" = $4,
-        status = $5::"PartyStatus"
+        status = $5::"PartyStatus",
+        description = $6,
+        address = $7,
+        keywords = $8::text[]
       WHERE id = $1`,
       [
         partyId,
@@ -158,6 +204,9 @@ export async function PATCH(request, context) {
         payload.partyGame ?? party.partyGame,
         nextTotalMembers,
         nextStatus,
+        nextDescription,
+        nextAddress,
+        nextKeywords,
       ]
     );
 
@@ -168,15 +217,15 @@ export async function PATCH(request, context) {
   });
 
   if (result.status === 404) {
-    return error(404, "Party not found");
+    return error(404, "Пати не найдена");
   }
 
   if (result.status === 403) {
-    return error(403, "Only the creator can update the party");
+    return error(403, "Обновлять пати может только создатель");
   }
 
   if (result.status === 400) {
-    return error(400, "Validation error", result.details);
+    return error(400, "Ошибка валидации", result.details);
   }
 
   return json(result.party);

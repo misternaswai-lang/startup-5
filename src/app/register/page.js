@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { apiFetch } from "../../lib/api";
+
 import { useRouter } from "next/navigation";
 
 export default function Register() {
@@ -46,14 +46,22 @@ export default function Register() {
         age: form.age === "" || form.age === null ? null : Number(form.age),
       };
 
-      await apiFetch("/auth/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
+      if (!res.ok) {
+        const data = await res.json();
+        throw data;
+      }
+
       router.push("/login");
     } catch (e) {
-      setError(e.details);
+      setError(e?.details || e?.message || "Ошибка регистрации");
     }
   };
 
@@ -195,7 +203,9 @@ export default function Register() {
 
           {error && (
             <div className="bg-red-900/40 border border-red-500 text-red-300 p-3 rounded-lg text-sm">
-              <pre>{error}</pre>
+              <p className="break-words">
+                {error?.toString().replace("П", " П")}
+              </p>
             </div>
           )}
         </div>
