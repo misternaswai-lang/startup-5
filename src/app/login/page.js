@@ -33,7 +33,7 @@ export default function Login() {
         localStorage.setItem("userId", data.user.id);
       }
 
-      router.push("/me");
+      window.location.href = "/me";
     } catch (e) {
       if (e?.error === "Invalid email or password") {
         setError("Неверная почта или пароль");
