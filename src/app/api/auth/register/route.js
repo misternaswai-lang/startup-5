@@ -12,19 +12,37 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return error(400, "Invalid JSON body");
+    return error(400, "Некорректное JSON-тело запроса");
   }
 
   const normalizedBody = {
-    email: body?.email?.trim().toLowerCase(),
-    username: body?.username?.trim(),
+    email: typeof body?.email === "string" ? body.email.trim().toLowerCase() : body?.email,
+    username: typeof body?.username === "string" ? body.username.trim() : body?.username,
     password: body?.password,
+    age: body?.age === "" || body?.age === null ? undefined : body?.age,
+    gender:
+      typeof body?.gender === "string"
+        ? body.gender.trim() === ""
+          ? undefined
+          : body.gender.trim()
+        : body?.gender,
+    city:
+      typeof body?.city === "string"
+        ? body.city.trim() === ""
+          ? undefined
+          : body.city.trim()
+        : body?.city,
+    interests: Array.isArray(body?.interests)
+      ? body.interests.map((interest) => String(interest).trim()).filter(Boolean)
+      : body?.interests === undefined || body?.interests === null
+        ? []
+        : body?.interests,
   };
 
   const details = validateRegisterInput(normalizedBody);
 
   if (details.length > 0) {
-    return error(400, "Validation error", details);
+    return error(400, "Ошибка валидации", details);
   }
 
   const existingUserResult = await query(
@@ -33,18 +51,22 @@ export async function POST(request) {
   );
 
   if (existingUserResult.rowCount > 0) {
-    return error(409, "User already exists");
+    return error(409, "Пользователь с таким email или username уже существует");
   }
 
   const userResult = await query(
-    `INSERT INTO "User" (id, email, username, password)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id, email, username, "createdAt"`,
+    `INSERT INTO "User" (id, email, username, password, age, gender, city, interests)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[])
+    RETURNING id, email, username, age, gender, city, interests, "createdAt"`,
     [
       createId(),
       normalizedBody.email,
       normalizedBody.username,
       hashPassword(normalizedBody.password),
+      normalizedBody.age ?? null,
+      normalizedBody.gender ?? null,
+      normalizedBody.city ?? null,
+      Array.isArray(normalizedBody.interests) ? normalizedBody.interests : [],
     ]
   );
 

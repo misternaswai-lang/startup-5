@@ -29,7 +29,7 @@ export async function POST(request, context) {
     if (party.ownerId === user.id) {
       return {
         status: 403,
-        message: "Party creator cannot leave their own party. Delete it instead.",
+        message: "Создатель не может выйти из своей пати. Удалите пати вместо этого.",
       };
     }
 
@@ -41,7 +41,7 @@ export async function POST(request, context) {
     const membership = membershipResult.rows[0];
 
     if (!membership) {
-      return { status: 404, message: "User is not a member of this party" };
+      return { status: 404, message: "Пользователь не состоит в этой пати" };
     }
 
     await client.query('DELETE FROM "PartyMember" WHERE id = $1', [membership.id]);
@@ -65,7 +65,7 @@ export async function POST(request, context) {
   });
 
   if (result.status === 404) {
-    return error(404, result.message ?? "Party not found");
+    return error(404, result.message ?? "Пати не найдена");
   }
 
   if (result.status === 403) {

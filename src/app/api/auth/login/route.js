@@ -12,18 +12,18 @@ export async function POST(request) {
   try {
     body = await request.json();
   } catch {
-    return error(400, "Invalid JSON body");
+    return error(400, "Некорректное JSON-тело запроса");
   }
 
   const normalizedBody = {
-    email: body?.email?.trim().toLowerCase(),
+    email: typeof body?.email === "string" ? body.email.trim().toLowerCase() : body?.email,
     password: body?.password,
   };
 
   const details = validateLoginInput(normalizedBody);
 
   if (details.length > 0) {
-    return error(400, "Validation error", details);
+    return error(400, "Ошибка валидации", details);
   }
 
   const result = await query(
@@ -34,7 +34,7 @@ export async function POST(request) {
   const user = result.rows[0];
 
   if (!user || !verifyPassword(normalizedBody.password, user.password)) {
-    return error(401, "Invalid email or password");
+    return error(401, "Неверный email или пароль");
   }
 
   return json({

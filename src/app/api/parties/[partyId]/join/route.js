@@ -32,7 +32,7 @@ export async function POST(request, context) {
     );
 
     if (membershipResult.rowCount > 0) {
-      return { status: 409, message: "User is already in this party" };
+      return { status: 409, message: "Пользователь уже состоит в этой пати" };
     }
 
     const countResult = await client.query(
@@ -43,7 +43,7 @@ export async function POST(request, context) {
     const currentMembers = countResult.rows[0].count;
 
     if (currentMembers >= party.totalMembers) {
-      return { status: 409, message: "Party is already full" };
+      return { status: 409, message: "В пати уже нет свободных мест" };
     }
 
     await client.query(
@@ -63,7 +63,7 @@ export async function POST(request, context) {
   });
 
   if (result.status === 404) {
-    return error(404, "Party not found");
+    return error(404, "Пати не найдена");
   }
 
   if (result.status === 409) {
