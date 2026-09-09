@@ -88,5 +88,6 @@
 
 > **«Не ищи компанию — находи своих. Вместе. Создавай события, находи людей с похожими интересами и превращай планы в реальные встречи.»**
 
-[qweqweda.pdf](https://github.com/user-attachments/files/31795906/qweqweda.pdf)
+[цуйакпе.pdf](https://github.com/user-attachments/files/32014219/default.pdf)
+
 
