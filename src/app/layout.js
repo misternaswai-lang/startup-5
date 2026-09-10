@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} bg-black text-white`}
       >
         {/* Header */}
-        <Header />
+     
 
         {/* Content */}
         <main className=" ">{children}</main>
