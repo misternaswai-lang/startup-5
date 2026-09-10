@@ -49,6 +49,7 @@
 
 ## BrandBook:
 
-[цуйакпе.pdf](https://github.com/user-attachments/files/32014219/default.pdf)
+[BrandBook.pdf](https://github.com/user-attachments/files/32063114/BrandBook.pdf)
+
 
 
